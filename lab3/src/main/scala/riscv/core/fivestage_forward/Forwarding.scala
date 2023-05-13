@@ -14,7 +14,7 @@
 
 package riscv.core.fivestage_forward
 
-import chisel3._
+import chisel3.{when, _}
 import riscv.Parameters
 
 object ForwardingType {
@@ -40,5 +40,27 @@ class Forwarding extends Module {
   // Lab3(Forward)
   io.reg1_forward_ex := 0.U
   io.reg2_forward_ex := 0.U
+
+  // 旁路要来自最新数据
+  when(io.rs1_ex =/= 0.U){
+    // ex后能得到reg_data的旁路
+    when(io.reg_write_enable_mem && io.rs1_ex === io.rd_mem ){
+      io.reg1_forward_ex := ForwardingType.ForwardFromMEM
+    }
+    // mem后（load）能得到reg_data的旁路
+    .elsewhen(io.reg_write_enable_wb && io.rs1_ex === io.rd_wb) {
+      io.reg1_forward_ex := ForwardingType.ForwardFromWB
+    }
+  }
+  when(io.rs2_ex =/= 0.U) {
+    // ex后能得到reg_data的旁路
+    when(io.reg_write_enable_mem && io.rs2_ex === io.rd_mem) {
+      io.reg2_forward_ex := ForwardingType.ForwardFromMEM
+    }
+    // mem（load）后能得到reg_data的旁路
+    .elsewhen(io.reg_write_enable_wb && io.rs2_ex === io.rd_wb) {
+      io.reg2_forward_ex := ForwardingType.ForwardFromWB
+    }
+  }
   // Lab3(Forward) End
 }

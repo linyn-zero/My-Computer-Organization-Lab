@@ -15,7 +15,23 @@
 package riscv.core.threestage
 
 import chisel3._
+import chisel3.util.MuxCase
+import riscv.Parameters
 
+object StallStates {
+  val None = 0.U
+  val PC = 1.U
+  val IF = 2.U
+  val ID = 3.U
+}
 class Control extends Module {
+  val io = IO(new Bundle {
+    val jump_flag = Input(Bool())
+
+    val if2id_flush = Output(Bool())
+    val id2ex_flush = Output(Bool())
+  })
   // Lab3(Flush)
+  io.if2id_flush := io.jump_flag
+  io.id2ex_flush := io.jump_flag
 }

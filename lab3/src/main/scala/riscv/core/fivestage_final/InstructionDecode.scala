@@ -17,6 +17,7 @@ package riscv.core.fivestage_final
 import chisel3._
 import chisel3.util._
 import riscv.Parameters
+import riscv.core.{ALU, ALUControl}
 
 object InstructionTypes {
   val L = "b0000011".U
@@ -220,10 +221,68 @@ class InstructionDecode extends Module {
     )
 
   // Lab3(Final)
-  io.ctrl_jump_instruction := false.B
-  io.clint_jump_flag := false.B
-  io.clint_jump_address := 0.U
-  io.if_jump_flag := false.B
-  io.if_jump_address := 0.U
+  // 旁路只负责数据冒险，满足则输送
+  // 旁路原因：jalr和B-type都有rs
+  // 旁路接口。
+  val reg1_data = MuxLookup(
+    io.reg1_forward,
+    io.reg1_data,
+    IndexedSeq(
+      ForwardingType.ForwardFromMEM -> io.forward_from_mem,
+      ForwardingType.ForwardFromWB -> io.forward_from_wb
+    )
+  )
+  val reg2_data = MuxLookup(
+    io.reg2_forward,
+    io.reg2_data,
+    IndexedSeq(
+      ForwardingType.ForwardFromMEM -> io.forward_from_mem,
+      ForwardingType.ForwardFromWB -> io.forward_from_wb
+    )
+  )
+
+  // 添加ALU单元，判断跳转指令的是否跳转
+  // 当前指令是否为跳转或分支指令
+  val jump_instruction = (opcode === Instructions.jal) ||
+    (opcode === Instructions.jalr) || (opcode === InstructionTypes.B)
+
+  // 当前指令是否为 跳转指令 或 判定成功的分支指令
+  val instruction_jump_flag =
+    (opcode === Instructions.jal) || (opcode === Instructions.jalr) ||
+    ((opcode === InstructionTypes.B) && MuxLookup(
+      funct3,
+      false.B,
+      IndexedSeq(
+        InstructionsTypeB.beq -> (reg1_data === reg2_data),
+        InstructionsTypeB.bne -> (reg1_data =/= reg2_data),
+        InstructionsTypeB.blt -> (reg1_data.asSInt < reg2_data.asSInt),
+        InstructionsTypeB.bge -> (reg1_data.asSInt >= reg2_data.asSInt),
+        InstructionsTypeB.bltu -> (reg1_data.asUInt < reg2_data.asUInt),
+        InstructionsTypeB.bgeu -> (reg1_data.asUInt >= reg2_data.asUInt)
+      )
+    ))
+
+  // 跳转地址（一开始我是真写了一个ALU，测试过了我再简化的
+  val jump_instrction_address = io.ex_immediate +
+    Mux(opcode === Instructions.jalr, reg1_data, io.instruction_address)
+
+  // clint的接口
+  io.clint_jump_flag := instruction_jump_flag
+  io.clint_jump_address := jump_instrction_address
+
+
+  // IF段和Control单元的接口
+  // 当前为跳转指令
+  io.ctrl_jump_instruction := jump_instruction
+
+  // 执行跳转的命令。正如学长说的，中断跳转和指令跳转的执行效果是一致的（下一周期有ID气泡）。
+  io.if_jump_flag := io.interrupt_assert || instruction_jump_flag
+
+  // IF段的跳转目标地址
+  io.if_jump_address := Mux(
+    io.interrupt_assert,              // 进出中断的跳转优先于指令跳转
+    io.interrupt_handler_address,     // 进出中断的跳转目标地址
+    jump_instrction_address           // 指令跳转目标
+  )
   // Lab3(Final) End
 }

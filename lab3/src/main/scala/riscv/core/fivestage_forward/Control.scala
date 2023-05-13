@@ -32,9 +32,25 @@ class Control extends Module {
   })
 
   // Lab3(Forward)
+
   io.if_flush := false.B
   io.id_flush := false.B
+
   io.pc_stall := false.B
   io.if_stall := false.B
+
+  // 跳转时清空前两个流水线寄存器
+
+  // 上条指令为load且RAW则阻塞
+  when(io.memory_read_enable_ex && io.rd_ex =/= 0.U
+    && (io.rs1_id === io.rd_ex || io.rs2_id === io.rd_ex)){
+    io.pc_stall := true.B
+    io.if_stall := true.B
+    io.id_flush := true.B
+  }
+  when(io.jump_flag) {
+    io.id_flush := true.B
+    io.if_flush := true.B
+  }
   // Lab3(Forward) End
 }

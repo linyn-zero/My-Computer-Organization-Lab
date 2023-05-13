@@ -48,7 +48,7 @@ class Top extends Module {
   val vga_display = Module(new VGADisplay)
   val display = Module(new CharacterDisplay)
   val timer = Module(new Timer)
-  val uart = Module(new Uart(frequency = 100000000, baudRate = 115200))
+  val uart = Module(new Uart(frequency = 125000000, baudRate = 115200))
   val dummy = Module(new Dummy)
 
   display.io.bundle <> dummy.io.bundle
@@ -101,6 +101,7 @@ class Top extends Module {
 
   display.io.x := vga_display.io.x
   display.io.y := vga_display.io.y
+  display.io.video_on := vga_display.io.video_on
 
   io.hsync := vga_display.io.hsync
   io.vsync := vga_display.io.vsync

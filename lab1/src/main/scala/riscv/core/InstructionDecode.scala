@@ -16,7 +16,7 @@ package riscv.core
 
 import chisel3._
 import chisel3.util._
-import riscv.Parameters
+import riscv.{Parameters, core}
 
 object InstructionTypes {
   val L = "b0000011".U
@@ -155,6 +155,7 @@ class InstructionDecode extends Module {
   val rs2 = io.instruction(24, 20)
 
   io.regs_reg1_read_address := Mux(opcode === Instructions.lui, 0.U(Parameters.PhysicalRegisterAddrWidth), rs1)
+//  io.regs_reg1_read_address := Mux(opcode === Instructions.lui, zero, rs1)
   io.regs_reg2_read_address := rs2
   val immediate = MuxLookup(
     opcode,
@@ -171,20 +172,33 @@ class InstructionDecode extends Module {
     )
   )
   io.ex_immediate := immediate
+
+
+
+  // lab1(InstructionDecode)
+  // 0:Reg1RD, 1:InsAddr
   io.ex_aluop1_source := Mux(
     opcode === Instructions.auipc || opcode === InstructionTypes.B || opcode === Instructions.jal,
     ALUOp1Source.InstructionAddress,
-    ALUOp1Source.Register
+      ALUOp1Source.Register
   )
-
-  // lab1(InstructionDecode)
-
-
-
-
-
-
-
+  // 1:Imm 0:Reg2RD
+  io.ex_aluop2_source := Mux(
+    opcode === InstructionTypes.RM,
+    ALUOp2Source.Register,
+    ALUOp2Source.Immediate
+  )
+  io.memory_read_enable := opcode === InstructionTypes.L
+  io.memory_write_enable := opcode === InstructionTypes.S
+  io.wb_reg_write_source := MuxLookup(
+    opcode,
+    RegWriteSource.ALUResult,
+    IndexedSeq(
+      InstructionTypes.L -> RegWriteSource.Memory,
+      Instructions.jalr -> RegWriteSource.NextInstructionAddress,
+      Instructions.jal -> RegWriteSource.NextInstructionAddress
+    )
+  )
   // lab1(InstructionDecode) end
   io.reg_write_enable := (opcode === InstructionTypes.RM) || (opcode === InstructionTypes.I) ||
     (opcode === InstructionTypes.L) || (opcode === Instructions.auipc) || (opcode === Instructions.lui) ||

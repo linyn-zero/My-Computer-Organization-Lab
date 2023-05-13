@@ -33,16 +33,17 @@ class InstructionFetch extends Module {
   })
   val pc = RegInit(ProgramCounter.EntryAddress)
 
+  // 执行fetchIns
   when(io.instruction_valid) {
     io.instruction := io.instruction_read_data
     // lab1(InstructionFetch)
-
-
-
+    when(io.jump_flag_id){
+      pc := io.jump_address_id
+    }.otherwise{
+      pc := pc + 4.U
+    }
     // la1(InstructionFetch) end
-
-
-  }.otherwise{
+  }.otherwise{ // 不执行fetchIns
     pc := pc
     io.instruction := 0x00000013.U
   }

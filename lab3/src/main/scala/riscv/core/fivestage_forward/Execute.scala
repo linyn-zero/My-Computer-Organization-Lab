@@ -61,8 +61,23 @@ class Execute extends Module {
   alu.io.func := alu_ctrl.io.alu_funct
 
   // Lab3(Forward)
-  val reg1_data = 0.U
-  val reg2_data = 0.U
+  // 选择
+  val reg1_data = MuxLookup(
+    io.reg1_forward,
+    io.reg1_data,
+    IndexedSeq(
+      ForwardingType.ForwardFromMEM -> io.forward_from_mem,
+      ForwardingType.ForwardFromWB -> io.forward_from_wb
+    )
+  )
+  val reg2_data = MuxLookup(
+    io.reg2_forward,
+    io.reg2_data,
+    IndexedSeq(
+      ForwardingType.ForwardFromMEM -> io.forward_from_mem,
+      ForwardingType.ForwardFromWB -> io.forward_from_wb
+    )
+  )
   // Lab3(Forward) End
 
   alu.io.op1 := Mux(
@@ -87,8 +102,8 @@ class Execute extends Module {
   ))
 
   // jump and interrupt
-  val instruction_jump_flag = (opcode === Instructions.jal) ||
-    (opcode === Instructions.jalr) ||
+  val instruction_jump_flag =
+    (opcode === Instructions.jal) || (opcode === Instructions.jalr) ||
     (opcode === InstructionTypes.B) && MuxLookup(
       funct3,
       false.B,
@@ -103,6 +118,7 @@ class Execute extends Module {
     )
   io.clint_jump_flag := instruction_jump_flag
   io.clint_jump_address := alu.io.result
+
   io.if_jump_flag := io.interrupt_assert_clint || instruction_jump_flag
   io.if_jump_address := Mux(io.interrupt_assert_clint,
     io.interrupt_handler_address_clint,

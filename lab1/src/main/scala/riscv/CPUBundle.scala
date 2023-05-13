@@ -17,6 +17,7 @@ package riscv
 import chisel3._
 import peripheral.RAMBundle
 
+
 class CPUBundle extends Bundle {
   val instruction_address = Output(UInt(Parameters.AddrWidth))
   val instruction = Input(UInt(Parameters.DataWidth))

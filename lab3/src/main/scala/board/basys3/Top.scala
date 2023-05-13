@@ -17,7 +17,7 @@ package board.basys3
 import chisel3._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util._
-import peripheral._
+import peripheral.{CharacterDisplay, _}
 import riscv._
 import riscv.core.CPU
 
@@ -40,7 +40,9 @@ class Top extends Module {
   })
 
   val mem = Module(new Memory(Parameters.MemorySizeInWords))
-  val display = Module(new VGADisplay)
+//  val display = Module(new VGADisplay)
+val vga_display = Module(new VGADisplay)
+  val display = Module(new CharacterDisplay)
   val timer = Module(new Timer)
   val uart = Module(new Uart(frequency = 100000000, baudRate = 115200))
   val dummy = Module(new Dummy)
@@ -68,7 +70,7 @@ class Top extends Module {
   CPU_clkdiv := CPU_next
 
   withClock(CPU_tick.asClock) {
-    val cpu = Module(new CPU(ImplementationType.FiveStageStall))
+    val cpu = Module(new CPU(ImplementationType.FiveStageFinal))
     cpu.io.interrupt_flag := Cat(uart.io.signal_interrupt, timer.io.signal_interrupt)
     cpu.io.debug_read_address := 0.U
     cpu.io.instruction_valid := rom_loader.io.load_finished
@@ -92,8 +94,12 @@ class Top extends Module {
     }
   }
 
-  io.hsync := display.io.hsync
-  io.vsync := display.io.vsync
+  display.io.x := vga_display.io.x
+  display.io.y := vga_display.io.y
+  display.io.video_on := vga_display.io.video_on
+
+  io.hsync := vga_display.io.hsync
+  io.vsync := vga_display.io.vsync
 
   io.rgb := display.io.rgb
 

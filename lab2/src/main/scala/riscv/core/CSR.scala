@@ -31,7 +31,7 @@ object CSRRegister {
   val CycleH = 0xc80.U(Parameters.CSRRegisterAddrWidth)
 }
 
-class CSR extends Module {
+class CSR extends Module { // 控制与状态寄存器
   val io = IO(new Bundle {
     val reg_read_address_id = Input(UInt(Parameters.CSRRegisterAddrWidth))
     val reg_write_enable_id= Input(Bool())
@@ -42,7 +42,7 @@ class CSR extends Module {
     val debug_reg_read_data = Output(UInt(Parameters.DataWidth))
     val reg_read_data = Output(UInt(Parameters.DataWidth))
 
-    val clint_access_bundle = Flipped(new CSRDirectAccessBundle)
+    val clint_access_bundle = Flipped(new CSRDirectAccessBundle)  // CLINT过来的接线
   })
 
   val mstatus = RegInit(UInt(Parameters.DataWidth), 0.U)
@@ -70,38 +70,48 @@ class CSR extends Module {
   io.reg_read_data := MuxLookup(io.reg_read_address_id, 0.U, regLUT)
   io.debug_reg_read_data := MuxLookup(io.debug_reg_read_address, 0.U,regLUT)
 
-  //lab2(CLINTCSR)
-  //what data should be passed from csr to clint (Note: what should clint see is the next state of the CPU)
-  /*
-  io.clint_access_bundle.mstatus :=
-  io.clint_access_bundle.mtvec :=
-  io.clint_access_bundle.mcause :=
-  io.clint_access_bundle.mepc :=
-  */
-
+  //lab2(CLINTCSR)   写CSR寄存器
+  // 来自CLINT
   when(io.clint_access_bundle.direct_write_enable) {
     mstatus := io.clint_access_bundle.mstatus_write_data
     mepc := io.clint_access_bundle.mepc_write_data
     mcause := io.clint_access_bundle.mcause_write_data
-  }.elsewhen(io.reg_write_enable_id) {
+  }
+  // 来自CSR指令
+  .elsewhen (io.reg_write_enable_id) {
     when(io.reg_write_address_id === CSRRegister.MSTATUS) {
       mstatus := io.reg_write_data_ex
-    }.elsewhen(io.reg_write_address_id === CSRRegister.MEPC) {
+    }.elsewhen (io.reg_write_address_id === CSRRegister.MEPC) {
       mepc := io.reg_write_data_ex
-    }.elsewhen(io.reg_write_address_id === CSRRegister.MCAUSE) {
+    }.elsewhen (io.reg_write_address_id === CSRRegister.MCAUSE) {
       mcause := io.reg_write_data_ex
-    }
-  }
-
-  when(io.reg_write_enable_id) {
-    when(io.reg_write_address_id === CSRRegister.MIE) {
+    }.elsewhen (io.reg_write_address_id === CSRRegister.MIE) {
       mie := io.reg_write_data_ex
-    }.elsewhen(io.reg_write_address_id === CSRRegister.MTVEC){
+    }.elsewhen (io.reg_write_address_id === CSRRegister.MTVEC) {
       mtvec := io.reg_write_data_ex
-    }.elsewhen(io.reg_write_address_id === CSRRegister.MSCRATCH) {
+    }.elsewhen (io.reg_write_address_id === CSRRegister.MSCRATCH) {
       mscratch := io.reg_write_data_ex
     }
   }
-
-
+  // CLINT读CSR寄存器（写出的寄存器的值要和现在的寄存器的值同步，也就是先修改，再输出(电路由于是并行的，上面修改了，下面还是会读到老数据）
+  io.clint_access_bundle.mstatus := Mux(
+    io.reg_write_enable_id && io.reg_write_address_id === CSRRegister.MSTATUS,
+    io.reg_write_data_ex,
+    mstatus
+  )
+  io.clint_access_bundle.mtvec := Mux(
+    io.reg_write_enable_id && io.reg_write_address_id === CSRRegister.MTVEC,
+    io.reg_write_data_ex,
+    mtvec
+  )
+  io.clint_access_bundle.mcause := Mux(
+    io.reg_write_enable_id && io.reg_write_address_id === CSRRegister.MCAUSE,
+    io.reg_write_data_ex,
+    mcause
+  )
+  io.clint_access_bundle.mepc := Mux(
+    io.reg_write_enable_id && io.reg_write_address_id === CSRRegister.MEPC,
+    io.reg_write_data_ex,
+    mepc
+  )
 }

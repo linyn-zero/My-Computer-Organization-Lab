@@ -41,6 +41,7 @@ class Timer extends Module {
       0x8.U -> enabled.asUInt,
     )
   )
+
   when(io.bundle.write_enable) {
     when(io.bundle.address === 0x4.U) {
       limit := io.bundle.write_data

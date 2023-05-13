@@ -32,13 +32,14 @@ class Execute extends Module {
     val if_jump_flag = Output(Bool())
     val if_jump_address = Output(UInt(Parameters.DataWidth))
   })
-
+  // instruction
   val opcode = io.instruction(6, 0)
   val funct3 = io.instruction(14, 12)
   val funct7 = io.instruction(31, 25)
   val rd = io.instruction(11, 7)
   val uimm = io.instruction(19, 15)
 
+  // alu,alu_ctrl
   val alu = Module(new ALU)
   val alu_ctrl = Module(new ALUControl)
 
@@ -47,13 +48,18 @@ class Execute extends Module {
   alu_ctrl.io.funct7 := funct7
 
   // lab1(Execute)
-
-
-
-
-
-
-
+  // alu
+  alu.io.func := alu_ctrl.io.alu_funct
+  alu.io.op1 := Mux(
+    io.aluop1_source === ALUOp1Source.InstructionAddress,
+    io.instruction_address,
+    io.reg1_data
+  )
+  alu.io.op2 := Mux(
+    io.aluop2_source === ALUOp2Source.Register,
+    io.reg2_data,
+    io.immediate
+  )
   // lab1(Execute) end
 
   io.mem_alu_result := alu.io.result

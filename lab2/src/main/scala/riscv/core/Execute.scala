@@ -73,7 +73,21 @@ class Execute extends Module {
   io.if_jump_address := io.immediate + Mux(opcode === Instructions.jalr, io.reg1_data, io.instruction_address)
   io.mem_alu_result := alu.io.result
   // lab2(CLINTCSR)
-  /*
-  io.csr_reg_write_data :=
-  */
+  // 需要先了解RV的中断指令
+  // 目标是在处理 CSR 指令时能够正确地得到写入 CSR 寄存器的数据
+  val uimm = Cat(0.U(27.W),io.instruction(19,15))
+
+  io.csr_reg_write_data := MuxLookup(
+    funct3,
+    0.U,
+    IndexedSeq(
+      InstructionsTypeCSR.csrrw -> io.reg1_data,
+      InstructionsTypeCSR.csrrs -> io.csr_reg_read_data.|(io.reg1_data.asUInt),
+      InstructionsTypeCSR.csrrc -> io.csr_reg_read_data.&((~io.reg1_data).asUInt),
+      InstructionsTypeCSR.csrrwi -> uimm,
+      InstructionsTypeCSR.csrrsi -> io.csr_reg_read_data.|(uimm.asUInt),
+      InstructionsTypeCSR.csrrci -> io.csr_reg_read_data.&((~uimm).asUInt)
+    )
+  )
+
 }

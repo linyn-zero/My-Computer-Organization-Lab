@@ -27,17 +27,35 @@ class Control extends Module {
     val rd_mem = Input(UInt(Parameters.PhysicalRegisterAddrWidth))
     val reg_write_enable_mem = Input(Bool())
 
-    val if_flush = Output(Bool())
-    val id_flush = Output(Bool())
-    val pc_stall = Output(Bool())
-    val if_stall = Output(Bool())
+    val if2id_flush = Output(Bool())
+    val id2ex_flush = Output(Bool())
+    val pc2if_stall = Output(Bool())
+    val if2id_stall = Output(Bool())
   })
 
   // Lab3(Stall)
-  io.if_flush := false.B
-  io.id_flush := false.B
 
-  io.pc_stall := false.B
-  io.if_stall := false.B
+  io.if2id_flush := false.B
+  io.id2ex_flush := false.B
+
+  io.pc2if_stall := false.B
+  io.if2id_stall := false.B
+
+  // 跳转时清空前两个流水线寄存器。跳转优先于数据冲突
+  when(io.jump_flag) {
+    io.id2ex_flush := true.B
+    io.if2id_flush := true.B
+  }
+  // RAW在数据到达wb前都要阻塞
+  .elsewhen( io.reg_write_enable_ex && io.rd_ex =/= 0.U && (io.rd_ex === io.rs1_id || io.rd_ex === io.rs2_id) ) {
+    io.pc2if_stall := true.B
+    io.if2id_stall := true.B
+    io.id2ex_flush := true.B // 阻塞时同时清空id2ex流水线寄存器，防止它往后跑
+  }
+  .elsewhen(io.reg_write_enable_mem && io.rd_mem =/= 0.U && (io.rd_mem === io.rs1_id || io.rd_mem === io.rs2_id )) {
+    io.pc2if_stall := true.B
+    io.if2id_stall := true.B
+    io.id2ex_flush := true.B
+  }
   // Lab3(Stall) End
 }

@@ -72,6 +72,23 @@ class TestTopModule(exeFilename: String) extends Module {
   io.mem_debug_read_data := mem.io.debug_read_data
 }
 
+// 自定义的应用测试
+class myTest extends AnyFlatSpec with ChiselScalatestTester {
+  behavior of "Single Cycle CPU"
+  it should "myTest" in {
+    test(new TestTopModule("myTest.asmbin")).withAnnotations(TestAnnotations.annos) { c =>
+      for (i <- 1 to 50) {
+        c.clock.step(1000)
+        c.io.mem_debug_read_address.poke((i * 4).U) // Avoid timeout
+      }
+      for (i <- 1 to 10) {
+        c.io.mem_debug_read_address.poke((4 * i).U)
+        c.clock.step()
+        c.io.mem_debug_read_data.expect((10 * i).U)
+      }
+    }
+  }
+}
 
 class FibonacciTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Single Cycle CPU"
@@ -88,7 +105,6 @@ class FibonacciTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 }
-
 class QuicksortTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Single Cycle CPU"
   it should "quicksort 10 numbers" in {
@@ -105,7 +121,6 @@ class QuicksortTest extends AnyFlatSpec with ChiselScalatestTester {
     }
   }
 }
-
 class ByteAccessTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "Single Cycle CPU"
   it should "store and load single byte" in {

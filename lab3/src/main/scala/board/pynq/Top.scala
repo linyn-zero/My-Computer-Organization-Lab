@@ -36,7 +36,9 @@ class Top extends Module {
     val led = Output(UInt(4.W))
   })
   val mem = Module(new Memory(Parameters.MemorySizeInWords))
-  val display = Module(new HDMIDisplay)
+//  val display = Module(new HDMIDisplay)
+  val hdmi_display = Module(new HDMIDisplay)
+  val display = Module(new CharacterDisplay)
   val timer = Module(new Timer)
   val uart = Module(new Uart(frequency = 125000000, baudRate = 115200))
   val dummy = Module(new Dummy)
@@ -91,11 +93,16 @@ class Top extends Module {
 
   io.led := 15.U(4.W)
 
+  display.io.x := hdmi_display.io.x
+  display.io.y := hdmi_display.io.y
+  display.io.video_on := hdmi_display.io.video_on
+  hdmi_display.io.rgb := display.io.rgb
+
   io.hdmi_hpdn := 1.U
-  io.hdmi_data_n := display.io.TMDSdata_n
-  io.hdmi_data_p := display.io.TMDSdata_p
-  io.hdmi_clk_n := display.io.TMDSclk_n
-  io.hdmi_clk_p := display.io.TMDSclk_p
+  io.hdmi_data_n := hdmi_display.io.TMDSdata_n
+  io.hdmi_data_p := hdmi_display.io.TMDSdata_p
+  io.hdmi_clk_n := hdmi_display.io.TMDSclk_n
+  io.hdmi_clk_p := hdmi_display.io.TMDSclk_p
 }
 
 object VerilogGenerator extends App {

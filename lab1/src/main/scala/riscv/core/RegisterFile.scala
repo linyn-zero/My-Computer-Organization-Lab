@@ -19,8 +19,8 @@ import riscv.Parameters
 
 object Registers extends Enumeration {
   type Register = Value
-  val zero,
-  ra, sp, gp, tp,
+  val zero = 0
+  val ra, sp, gp, tp,
   t0, t1, t2, fp,
   s1,
   a0, a1, a2, a3, a4, a5, a6, a7,

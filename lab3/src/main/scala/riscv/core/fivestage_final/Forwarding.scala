@@ -43,7 +43,56 @@ class Forwarding extends Module {
   // Lab3(Final)
   io.reg1_forward_id := 0.U
   io.reg2_forward_id := 0.U
+
   io.reg1_forward_ex := 0.U
   io.reg2_forward_ex := 0.U
+  /**
+   1. 旁路要来自最新数据
+   2. 能得就得，不能得就不要，不用考虑当前指令是不是分支或跳转
+      因为无论是什么指令id都会产生JumpIns和JumpAddr，但是怎么用JumpIns和JumpAddr是Control的责任
+  */
+  // 到ID的旁路
+  when(io.rs1_id =/= 0.U) {
+    // 从MEM取得
+    when(io.reg_write_enable_mem && io.rs1_id === io.rd_mem) {
+      io.reg1_forward_id := ForwardingType.ForwardFromMEM
+    }
+    // 从WB取得（依赖load指令）
+    .elsewhen(io.reg_write_enable_wb && io.rs1_id === io.rd_wb) {
+      io.reg1_forward_id := ForwardingType.ForwardFromWB
+    }
+  }
+  when(io.rs2_id =/= 0.U) {
+    // 从MEM取得
+    when(io.reg_write_enable_mem && io.rs2_id === io.rd_mem) {
+      io.reg2_forward_id := ForwardingType.ForwardFromMEM
+    }
+    // 从WB取得（依赖load指令）
+    .elsewhen(io.reg_write_enable_wb && io.rs2_id === io.rd_wb) {
+      io.reg2_forward_id := ForwardingType.ForwardFromWB
+    }
+  }
+
+  // 到EX的旁路。
+  when(io.rs1_ex =/= 0.U) {
+    // 从MEM取得
+    when(io.reg_write_enable_mem && io.rs1_ex === io.rd_mem) {
+      io.reg1_forward_ex := ForwardingType.ForwardFromMEM
+    }
+    // 从WB取得（依赖load指令）
+    .elsewhen(io.reg_write_enable_wb && io.rs1_ex === io.rd_wb) {
+      io.reg1_forward_ex := ForwardingType.ForwardFromWB
+    }
+  }
+  when(io.rs2_ex =/= 0.U) {
+    // 从MEM取得
+    when(io.reg_write_enable_mem && io.rs2_ex === io.rd_mem) {
+      io.reg2_forward_ex := ForwardingType.ForwardFromMEM
+    }
+    // 从WB取得（依赖load指令）
+    .elsewhen(io.reg_write_enable_wb && io.rs2_ex === io.rd_wb) {
+      io.reg2_forward_ex := ForwardingType.ForwardFromWB
+    }
+  }
   // Lab3(Final) End
 }

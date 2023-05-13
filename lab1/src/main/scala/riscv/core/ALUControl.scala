@@ -16,7 +16,9 @@ package riscv.core
 
 import chisel3._
 import chisel3.util._
-
+//object ALUFunctions extends ChiselEnum {
+//  val zero, add, sub, sll, slt, xor, or, and, srl, sra, sltu = Value
+//}
 class ALUControl extends Module {
   val io = IO(new Bundle {
     val opcode = Input(UInt(7.W))

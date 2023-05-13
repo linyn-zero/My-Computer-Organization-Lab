@@ -20,10 +20,10 @@ import riscv.Parameters
 
 class WriteBack extends Module {
   val io = IO(new Bundle() {
-    val instruction_address = Input(UInt(Parameters.AddrWidth))
-    val alu_result = Input(UInt(Parameters.DataWidth))
-    val memory_read_data = Input(UInt(Parameters.DataWidth))
-    val regs_write_source = Input(UInt(2.W))
+    val instruction_address = Input(UInt(Parameters.AddrWidth)) // 2
+    val alu_result = Input(UInt(Parameters.DataWidth))          // 0
+    val memory_read_data = Input(UInt(Parameters.DataWidth))    // 1 （其实图片上的序号对实现不重要
+    val regs_write_source = Input(UInt(2.W))                    // 从译码器来
     val regs_write_data = Output(UInt(Parameters.DataWidth))
   })
   io.regs_write_data := MuxLookup(
@@ -35,3 +35,10 @@ class WriteBack extends Module {
     )
   )
 }
+
+//object RegWriteSource {
+//  val ALUResult = 0.U(2.W)
+//  val Memory = 1.U(2.W)
+//  //val CSR = 2.U(2.W)
+//  val NextInstructionAddress = 3.U(2.W)
+//}

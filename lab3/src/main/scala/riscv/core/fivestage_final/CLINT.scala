@@ -54,14 +54,16 @@ class CLINT extends Module {
     val csr_bundle = new CSRDirectAccessBundle
   })
   val interrupt_enable = io.csr_bundle.mstatus(3)
-  val instruction_address = Mux(
-    io.jump_flag,
-    io.jump_address,
-    io.instruction_address_if,
+  // 跳转判断提前后就变得简单了
+  val instruction_address = Mux( // 如果此时要进中断，那就想要返回地址。
+    io.jump_flag,               // 指令跳转信号
+    io.jump_address,            // 指令跳转，则保存指令跳转地址
+    io.instruction_address_if,  // 中断跳转，则保存PC的指令地址，新鲜出炉的那种。
   )
   val mstatus_disable_interrupt = io.csr_bundle.mstatus(31, 4) ## 0.U(1.W) ## io.csr_bundle.mstatus(2, 0)
   val mstatus_recover_interrupt = io.csr_bundle.mstatus(31, 4) ## io.csr_bundle.mstatus(7) ## io.csr_bundle.mstatus(2, 0)
 
+  // 也是进入中断的一种，和外设中断操作的区别在于中断原因mcause和（应该有）跳转目标mtvec
   when(io.instruction_id === InstructionsEnv.ecall || io.instruction_id === InstructionsEnv.ebreak) {
     io.csr_bundle.mstatus_write_data := mstatus_disable_interrupt
     io.csr_bundle.mepc_write_data := instruction_address
